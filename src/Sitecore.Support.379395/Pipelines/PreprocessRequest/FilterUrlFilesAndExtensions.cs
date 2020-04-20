@@ -1,12 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Web;
 using System.Xml;
 using Sitecore.Configuration;
+using Sitecore.Diagnostics;
 using Sitecore.Pipelines.PreprocessRequest;
 
-namespace Sitecore.XA.Foundation.SitecoreExtensions.Pipelines.PreprocessRequest
+namespace Sitecore.Support.XA.Foundation.SitecoreExtensions.Pipelines.PreprocessRequest
 {
     public class FilterUrlFilesAndExtensions : FilterUrlExtensions
     {
@@ -22,7 +24,7 @@ namespace Sitecore.XA.Foundation.SitecoreExtensions.Pipelines.PreprocessRequest
 
         public override void Process(PreprocessRequestArgs args)
         {
-            var filePath = Path.GetFileName(HttpContext.Current.Request.FilePath) ?? string.Empty;
+            string filePath = GetRequestFilePath();
             if (AllowedFileNames.Any() && AllowedFileNames.Contains(filePath))
             {
                 return;
@@ -33,6 +35,19 @@ namespace Sitecore.XA.Foundation.SitecoreExtensions.Pipelines.PreprocessRequest
         protected virtual IEnumerable<string> GetAllowedFileNames()
         {
             return Factory.GetConfigNodes("experienceAccelerator/sitecoreExtensions/filterUrlFilesAndExtensions/file").Cast<XmlNode>().Select(node => node.InnerText);
+        }
+
+        protected virtual string GetRequestFilePath()
+        {
+            try
+            {
+                return Path.GetFileName(HttpContext.Current.Request.FilePath);
+            }
+            catch (Exception error)
+            {
+                Log.Warn("Sitecore.Support.379395: " + error.Message, error, this);
+                return string.Empty;
+            }
         }
     }
 }
